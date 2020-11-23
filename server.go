@@ -12,7 +12,7 @@ import (
 	
 	"github.com/baadjis/transferservice/graph"
 	"github.com/baadjis/transferservice/graph/generated"
-	"github.com/baadjis/transferservice/grah/database"
+	"github.com/baadjis/transferservice/graph/database"
 	
 	
 )
