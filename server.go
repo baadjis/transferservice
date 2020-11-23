@@ -6,19 +6,20 @@ import (
 	"os"
 	
 
-
+  
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	
 	"github.com/baadjis/transferservice/graph"
 	"github.com/baadjis/transferservice/graph/generated"
+	"github.com/baadjis/transferservice/grah/database"
 	
-	"github.com/baadjis/transferservice/database"
+	
 )
 
 const defaultPort = "8080"
 
-func main() {
+func main(){
 
 	database.initDB()
 	port := os.Getenv("PORT")

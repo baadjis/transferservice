@@ -10,5 +10,6 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/vektah/gqlparser/v2 v2.1.0
-	golang.org/x/crypto v0.0.0-20191205180655-e7c4368fe9dd
+	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
+	golang.org/x/sys v0.0.0-20201119102817-f84b799fce68 // indirect
 )
