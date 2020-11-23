@@ -1,0 +1,82 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type Customer {
+  id: ID!
+  firstname: String!
+  lastname: String!
+  phone: String!
+  email: String
+  country:String!
+}
+
+type TransactionDetails{
+  id: ID!
+  txcode:String!
+  sentAmount:Float!
+  sentCurrency: String!
+  receivedAmount: Float!
+  receivedCurrency:String!
+  xchange: Float!
+  fees: Float!
+  paymentMode: String!
+  receptionMode: String!
+}
+
+type Transaction{
+  id:ID!
+  txcode:String!
+  sender:Customer!
+  receiver: Customer!
+  transactionDetails:TransactionDetails!
+  senderAgentID:String
+  receiverAgentID:String
+  status:String!
+}
+
+
+input CustomerInput{
+
+  firstname: String!
+  lastname: String!
+  phone: String!
+  email: String
+  country:String!
+}
+
+input TransactionDetailsInput{
+  txcode:String!
+  sentAmount:Float!
+  sentCurrency:String!
+  receivedAmount:Float!
+  receivedCurrency:String!
+  xchange: Float!
+  fees: Float!
+  paymentMode: String!
+  receptionMode: String!
+}
+input TransactionInput {
+
+  txcode:String!
+  sender:CustomerInput!
+  receiver: CustomerInput!
+  transactionDetails:TransactionDetailsInput!
+  senderAgentID:String
+  receiverAgentID:String
+  status:String!
+}
+type Query {
+  transactions: [Transaction!]!
+  transation(txcode:String!):Transaction!
+}
+
+
+
+type Mutation {
+  createTransaction(input: TransactionInput!): Transaction!
+
+  updateTransaction(txcode:String!,input:TransactionInput):Transaction!
+
+  deleteTransaction(txcode:String!):Boolean!
+}
