@@ -21,14 +21,14 @@ const defaultPort = "8080"
 
 func main(){
 
-	database.initDB()
+	database.InitDB()
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
 	}
 
-	srv := handler.GraphQL(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
-		DB: database.db,
+	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
+		DB: database.DB,
 	}}))
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))

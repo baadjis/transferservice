@@ -16,7 +16,7 @@ import(
 
 
 )
-var db *gorm.DB
+var DB *gorm.DB
 
 func getCredentials() (string, string, error) {
     reader := bufio.NewReader(os.Stdin)
@@ -38,7 +38,7 @@ func getCredentials() (string, string, error) {
 }
 
 
-func initDB() {
+func InitDB() {
 	var err error
 	username,password ,_:=getCredentials()
     dataSourceName := username+":"+password+"@tcp(localhost:3306)/?parseTime=True"
