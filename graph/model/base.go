@@ -19,6 +19,16 @@ type BaseModel struct{
 
 }
 
+func (bas* BaseModel) AftereUpdate(scope *gorm.Scope) error {
+    scope.SetColumn("UpdatedAt", time.Now())
+    return nil
+}
+
+func (bas* BaseModel) AfterDelete(scope *gorm.Scope) error {
+    scope.SetColumn("UpdatedAt", time.Now())
+    return nil
+}
+
 
 func (base *BaseModel) BeforeCreate(scope *gorm.Scope) error {
 	b := make([]byte, 4) //equals 8 charachters

@@ -2,18 +2,14 @@
 
 package model
 
-import (
-	"github.com/jinzhu/gorm"
-)
 type Customer struct {
-	gorm.Model
-	Firstname   string         `json:"firstname"`
-	Lastname    string         `json:"lastname"`
-	Phone       string         `json:"phone"`
-	Email       *string        `json:"email"`
-	Country     string         `json:"country"`
-	Receptions  []*Transaction `json:"receptions"`
-	Expiditions []*Transaction `json:"expiditions"`
+	ID           string         `json:"id"`
+	Firstname    string         `json:"firstname"`
+	Lastname     string         `json:"lastname"`
+	Phone        string         `json:"phone"`
+	Email        *string        `json:"email"`
+	Country      string         `json:"country"`
+	Transactions []*Transaction `json:"transactions"`
 }
 
 type CustomerChanges struct {
@@ -35,13 +31,13 @@ type ReceptionInput struct {
 }
 
 type Transaction struct {
-	gorm.Model
-	SenderID           uint               `json:"senderID"`
-	ReceiverID         uint               `json:"receiverID"`
+	ID                 string              `json:"id"`
+	SenderID           string              `json:"senderID"`
+	ReceiverID         string              `json:"receiverID"`
 	Txcode             string              `json:"txcode"`
-	Sender             *Customer           `json:"sender" gorm:"foreignKey:SenderID"`
-	Receiver           *Customer           `json:"receiver" gorm:"foreignKey:ReceiverID"`
-	DetailsID          uint                `json:"detailsID"`
+	Sender             *Customer           `json:"sender"`
+	Receiver           *Customer           `json:"receiver"`
+	DetailsID          string              `json:"detailsID"`
 	TransactionDetails *TransactionDetails `json:"transactionDetails"`
 	SenderAgentID      *string             `json:"senderAgentID"`
 	ReceiverAgentID    *string             `json:"receiverAgentID"`
@@ -49,7 +45,7 @@ type Transaction struct {
 }
 
 type TransactionDetails struct {
-	gorm.Model
+	ID               string  `json:"id"`
 	Txcode           string  `json:"txcode"`
 	SentAmount       float64 `json:"sentAmount"`
 	SentCurrency     string  `json:"sentCurrency"`

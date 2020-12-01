@@ -44,14 +44,13 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Customer struct {
-		Country     func(childComplexity int) int
-		Email       func(childComplexity int) int
-		Expiditions func(childComplexity int) int
-		Firstname   func(childComplexity int) int
-		ID          func(childComplexity int) int
-		Lastname    func(childComplexity int) int
-		Phone       func(childComplexity int) int
-		Receptions  func(childComplexity int) int
+		Country      func(childComplexity int) int
+		Email        func(childComplexity int) int
+		Firstname    func(childComplexity int) int
+		ID           func(childComplexity int) int
+		Lastname     func(childComplexity int) int
+		Phone        func(childComplexity int) int
+		Transactions func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -67,10 +66,12 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		CustomerExpeditions func(childComplexity int, id string) int
-		CustomerReceptions  func(childComplexity int, id string) int
-		Transaction         func(childComplexity int, txcode string) int
-		Transactions        func(childComplexity int) int
+		Customer     func(childComplexity int, id string) int
+		Customers    func(childComplexity int) int
+		Detail       func(childComplexity int, txcode string) int
+		Details      func(childComplexity int) int
+		Transaction  func(childComplexity int, txcode string) int
+		Transactions func(childComplexity int) int
 	}
 
 	Transaction struct {
@@ -115,8 +116,10 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Transactions(ctx context.Context) ([]*model.Transaction, error)
 	Transaction(ctx context.Context, txcode string) (*model.Transaction, error)
-	CustomerReceptions(ctx context.Context, id string) ([]*model.Transaction, error)
-	CustomerExpeditions(ctx context.Context, id string) ([]*model.Transaction, error)
+	Customers(ctx context.Context) ([]*model.Customer, error)
+	Customer(ctx context.Context, id string) (*model.Customer, error)
+	Detail(ctx context.Context, txcode string) (*model.TransactionDetails, error)
+	Details(ctx context.Context) ([]*model.TransactionDetails, error)
 }
 
 type executableSchema struct {
@@ -148,13 +151,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Customer.Email(childComplexity), true
 
-	case "Customer.expiditions":
-		if e.complexity.Customer.Expiditions == nil {
-			break
-		}
-
-		return e.complexity.Customer.Expiditions(childComplexity), true
-
 	case "Customer.firstname":
 		if e.complexity.Customer.Firstname == nil {
 			break
@@ -183,12 +179,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Customer.Phone(childComplexity), true
 
-	case "Customer.receptions":
-		if e.complexity.Customer.Receptions == nil {
+	case "Customer.transactions":
+		if e.complexity.Customer.Transactions == nil {
 			break
 		}
 
-		return e.complexity.Customer.Receptions(childComplexity), true
+		return e.complexity.Customer.Transactions(childComplexity), true
 
 	case "Mutation.addCustomer":
 		if e.complexity.Mutation.AddCustomer == nil {
@@ -298,29 +294,43 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateTransaction(childComplexity, args["txcode"].(string), args["input"].(model.TransactionInput)), true
 
-	case "Query.customerExpeditions":
-		if e.complexity.Query.CustomerExpeditions == nil {
+	case "Query.customer":
+		if e.complexity.Query.Customer == nil {
 			break
 		}
 
-		args, err := ec.field_Query_customerExpeditions_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_customer_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.CustomerExpeditions(childComplexity, args["id"].(string)), true
+		return e.complexity.Query.Customer(childComplexity, args["id"].(string)), true
 
-	case "Query.customerReceptions":
-		if e.complexity.Query.CustomerReceptions == nil {
+	case "Query.customers":
+		if e.complexity.Query.Customers == nil {
 			break
 		}
 
-		args, err := ec.field_Query_customerReceptions_args(context.TODO(), rawArgs)
+		return e.complexity.Query.Customers(childComplexity), true
+
+	case "Query.Detail":
+		if e.complexity.Query.Detail == nil {
+			break
+		}
+
+		args, err := ec.field_Query_Detail_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.CustomerReceptions(childComplexity, args["id"].(string)), true
+		return e.complexity.Query.Detail(childComplexity, args["txcode"].(string)), true
+
+	case "Query.Details":
+		if e.complexity.Query.Details == nil {
+			break
+		}
+
+		return e.complexity.Query.Details(childComplexity), true
 
 	case "Query.transaction":
 		if e.complexity.Query.Transaction == nil {
@@ -563,8 +573,7 @@ type Customer {
   phone: String!
   email: String
   country:String!
-  receptions:[Transaction]
-  expiditions:[Transaction]
+  transactions:[Transaction]
 
 }
 
@@ -639,14 +648,18 @@ input ReceptionInput{
 }
 type Query {
   transactions: [Transaction!]!
-  transaction(txcode:String!):Transaction!
-  customerReceptions(id:ID!):[Transaction!]!
-  customerExpeditions(id:ID!):[Transaction!]!
+  transaction(txcode:String!):Transaction
+  customers:[Customer!]!
+  customer(id:ID!):Customer
+  Detail(txcode:String!):TransactionDetails
+  Details:[TransactionDetails!]!
+  
 }
 
 
 
 type Mutation {
+    
   createTransaction(input: TransactionInput!): Transaction!
 
   updateTransaction(txcode:String!,input:TransactionInput!):Transaction!
@@ -833,6 +846,21 @@ func (ec *executionContext) field_Mutation_updateTransaction_args(ctx context.Co
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_Detail_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["txcode"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("txcode"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["txcode"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -848,22 +876,7 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_customerExpeditions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_customerReceptions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_customer_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -1138,7 +1151,7 @@ func (ec *executionContext) _Customer_country(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Customer_receptions(ctx context.Context, field graphql.CollectedField, obj *model.Customer) (ret graphql.Marshaler) {
+func (ec *executionContext) _Customer_transactions(ctx context.Context, field graphql.CollectedField, obj *model.Customer) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1156,39 +1169,7 @@ func (ec *executionContext) _Customer_receptions(ctx context.Context, field grap
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Receptions, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]*model.Transaction)
-	fc.Result = res
-	return ec.marshalOTransaction2ᚕᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransaction(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Customer_expiditions(ctx context.Context, field graphql.CollectedField, obj *model.Customer) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Customer",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Expiditions, nil
+		return obj.Transactions, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1647,17 +1628,49 @@ func (ec *executionContext) _Query_transaction(ctx context.Context, field graphq
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.Transaction)
 	fc.Result = res
-	return ec.marshalNTransaction2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransaction(ctx, field.Selections, res)
+	return ec.marshalOTransaction2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransaction(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_customerReceptions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_customers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Customers(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Customer)
+	fc.Result = res
+	return ec.marshalNCustomer2ᚕᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomerᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_customer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1674,7 +1687,7 @@ func (ec *executionContext) _Query_customerReceptions(ctx context.Context, field
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_customerReceptions_args(ctx, rawArgs)
+	args, err := ec.field_Query_customer_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -1682,24 +1695,21 @@ func (ec *executionContext) _Query_customerReceptions(ctx context.Context, field
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().CustomerReceptions(rctx, args["id"].(string))
+		return ec.resolvers.Query().Customer(rctx, args["id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Transaction)
+	res := resTmp.(*model.Customer)
 	fc.Result = res
-	return ec.marshalNTransaction2ᚕᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionᚄ(ctx, field.Selections, res)
+	return ec.marshalOCustomer2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomer(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_customerExpeditions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_Detail(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1716,7 +1726,7 @@ func (ec *executionContext) _Query_customerExpeditions(ctx context.Context, fiel
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_customerExpeditions_args(ctx, rawArgs)
+	args, err := ec.field_Query_Detail_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -1724,7 +1734,39 @@ func (ec *executionContext) _Query_customerExpeditions(ctx context.Context, fiel
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().CustomerExpeditions(rctx, args["id"].(string))
+		return ec.resolvers.Query().Detail(rctx, args["txcode"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.TransactionDetails)
+	fc.Result = res
+	return ec.marshalOTransactionDetails2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionDetails(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_Details(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Details(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1736,9 +1778,9 @@ func (ec *executionContext) _Query_customerExpeditions(ctx context.Context, fiel
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Transaction)
+	res := resTmp.([]*model.TransactionDetails)
 	fc.Result = res
-	return ec.marshalNTransaction2ᚕᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionᚄ(ctx, field.Selections, res)
+	return ec.marshalNTransactionDetails2ᚕᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionDetailsᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3934,10 +3976,8 @@ func (ec *executionContext) _Customer(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "receptions":
-			out.Values[i] = ec._Customer_receptions(ctx, field, obj)
-		case "expiditions":
-			out.Values[i] = ec._Customer_expiditions(ctx, field, obj)
+		case "transactions":
+			out.Values[i] = ec._Customer_transactions(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4058,12 +4098,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_transaction(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			})
-		case "customerReceptions":
+		case "customers":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -4071,13 +4108,13 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_customerReceptions(ctx, field)
+				res = ec._Query_customers(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
 				return res
 			})
-		case "customerExpeditions":
+		case "customer":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -4085,7 +4122,29 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_customerExpeditions(ctx, field)
+				res = ec._Query_customer(ctx, field)
+				return res
+			})
+		case "Detail":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_Detail(ctx, field)
+				return res
+			})
+		case "Details":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_Details(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -4513,6 +4572,43 @@ func (ec *executionContext) marshalNCustomer2githubᚗcomᚋbaadjisᚋtransferse
 	return ec._Customer(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNCustomer2ᚕᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Customer) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNCustomer2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomer(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
 func (ec *executionContext) marshalNCustomer2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomer(ctx context.Context, sel ast.SelectionSet, v *model.Customer) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -4641,6 +4737,43 @@ func (ec *executionContext) marshalNTransaction2ᚖgithubᚗcomᚋbaadjisᚋtran
 
 func (ec *executionContext) marshalNTransactionDetails2githubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionDetails(ctx context.Context, sel ast.SelectionSet, v model.TransactionDetails) graphql.Marshaler {
 	return ec._TransactionDetails(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTransactionDetails2ᚕᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionDetailsᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TransactionDetails) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTransactionDetails2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionDetails(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
 }
 
 func (ec *executionContext) marshalNTransactionDetails2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionDetails(ctx context.Context, sel ast.SelectionSet, v *model.TransactionDetails) graphql.Marshaler {
@@ -4921,6 +5054,13 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return graphql.MarshalBoolean(*v)
 }
 
+func (ec *executionContext) marshalOCustomer2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomer(ctx context.Context, sel ast.SelectionSet, v *model.Customer) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Customer(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4990,6 +5130,13 @@ func (ec *executionContext) marshalOTransaction2ᚖgithubᚗcomᚋbaadjisᚋtran
 		return graphql.Null
 	}
 	return ec._Transaction(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOTransactionDetails2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionDetails(ctx context.Context, sel ast.SelectionSet, v *model.TransactionDetails) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._TransactionDetails(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

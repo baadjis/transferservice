@@ -9,8 +9,7 @@ type Customer {
   phone: String!
   email: String
   country:String!
-  receptions:[Transaction]
-  expiditions:[Transaction]
+  transactions:[Transaction]
 
 }
 
@@ -85,14 +84,18 @@ input ReceptionInput{
 }
 type Query {
   transactions: [Transaction!]!
-  transaction(txcode:String!):Transaction!
-  customerReceptions(id:ID!):[Transaction!]!
-  customerExpeditions(id:ID!):[Transaction!]!
+  transaction(txcode:String!):Transaction
+  customers:[Customer!]!
+  customer(id:ID!):Customer
+  Detail(txcode:String!):TransactionDetails
+  Details:[TransactionDetails!]!
+  
 }
 
 
 
 type Mutation {
+    
   createTransaction(input: TransactionInput!): Transaction!
 
   updateTransaction(txcode:String!,input:TransactionInput!):Transaction!

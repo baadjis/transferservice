@@ -155,39 +155,20 @@ func (r *queryResolver) Transaction(ctx context.Context, txcode string) (*model.
     return &transaction , nil
 }
 
-func (r *queryResolver) Customer(ctx context.Context, id string)(*model.Customer,error) {
-
-	var customer model.Customer
-	r.DB.Where("id = ?" ,id).Preloads("transactions").First(&customer)
-	 
-	return &customer,nil
+func (r *queryResolver) Customer(ctx context.Context, id string) (*model.Transaction, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Customers(ctx context.Context)([]*model.Customer,error) {
-	var customers []*model.Customer
-
-	r.DB.Find(&customers)
-	
-    return customers,nil
+func (r *queryResolver) Customers(ctx context.Context, id string) []*model.Transaction {
+	panic(fmt.Errorf("not implemented"))
 }
 
-
-func (r *queryResolver) Detail(ctx context.Context, txcode string) (*model.TransactionDetails, error) {
-           
-	var detail model.TransactionDetails
-	r.DB.Where("txcode = ?" ,txcode).First(&detail)
-	 
-	return &detail,nil
+func (r *queryResolver) Detail(ctx context.Context, id string) (*model.TransactionDetails, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Details(ctx context.Context) ([]*model.TransactionDetails,error){
-	
-	var details []*model.TransactionDetails
-
-	r.DB.Find(&details)
-	
-    return details,nil
-
+func (r *queryResolver) Details(ctx context.Context, id string) []*model.Transaction{
+	panic(fmt.Errorf("not implemented"))
 }
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
