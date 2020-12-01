@@ -9,7 +9,11 @@ type Customer {
   phone: String!
   email: String
   country:String!
+  receptions:[Transaction]
+  expiditions:[Transaction]
+
 }
+
 
 type TransactionDetails{
   id: ID!
@@ -26,15 +30,23 @@ type TransactionDetails{
 
 type Transaction{
   id:ID!
+  senderID:ID!
+  receiverID:ID!
   txcode:String!
   sender:Customer!
-  receiver: Customer!
+  receiver:Customer!
+  detailsID: ID!
   transactionDetails:TransactionDetails!
   senderAgentID:String
   receiverAgentID:String
   status:String!
 }
 
+input CustomerChanges{
+  firstname: String!
+  lastname:String!
+  
+}
 
 input CustomerInput{
 
@@ -66,9 +78,16 @@ input TransactionInput {
   receiverAgentID:String
   status:String!
 }
+
+input ReceptionInput{
+  receiverAgentID:String
+  status:String!
+}
 type Query {
   transactions: [Transaction!]!
-  transation(txcode:String!):Transaction!
+  transaction(txcode:String!):Transaction!
+  customerReceptions(id:ID!):[Transaction!]!
+  customerExpeditions(id:ID!):[Transaction!]!
 }
 
 
@@ -76,7 +95,18 @@ type Query {
 type Mutation {
   createTransaction(input: TransactionInput!): Transaction!
 
-  updateTransaction(txcode:String!,input:TransactionInput):Transaction!
+  updateTransaction(txcode:String!,input:TransactionInput!):Transaction!
 
   deleteTransaction(txcode:String!):Boolean!
+
+  confirmReception(txcode:String!,input:ReceptionInput!):Boolean!
+
+  
+  addCustomer(input:CustomerInput!):Customer!
+  ChangeReceiver(txcode:String!,input:CustomerChanges!):Customer!
+  deletCustomer(id:ID!):Boolean!
+
+  addDetails(input:TransactionDetailsInput!):TransactionDetails!
+
+  deleteDetails(txcode:String!):Boolean!
 }

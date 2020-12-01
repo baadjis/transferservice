@@ -18,7 +18,10 @@ import(
 )
 var DB *gorm.DB
 
+// get your database credentials
 func getCredentials() (string, string, error) {
+
+
     reader := bufio.NewReader(os.Stdin)
 
     fmt.Print("Enter databse Username: ")
@@ -39,26 +42,27 @@ func getCredentials() (string, string, error) {
 
 
 func InitDB() {
+
 	var err error
 	username,password ,_:=getCredentials()
     dataSourceName := username+":"+password+"@tcp(localhost:3306)/?parseTime=True"
-    db, err := gorm.Open("mysql", dataSourceName)
+    DB, err = gorm.Open("mysql", dataSourceName)
 
     if err != nil {
         fmt.Println(err)
         panic("failed to connect database")
     }
     fmt.Println("succesfuly connected to mysql")
-    db.LogMode(true)
+    DB.LogMode(true)
 
     // Create the database. This is a one-time step.
 	// Comment out if running multiple times - You may see an error otherwise
-	db.Exec("DROP DATABASE transfer_db")
-	db.Exec("CREATE DATABASE transfer_db")
+	DB.Exec("DROP  DATABASE IF EXISTS transfer_db")
+	DB.Exec("CREATE DATABASE transfer_db")
+    DB.Exec("USE transfer_db")
     
-	db.Exec("USE transfer_db")
-	
 
     // Migration to create tables for transfer
-    db.AutoMigrate(&model.Transaction{}, &model.TransactionDetails{},&model.Customer{})	
+	DB.AutoMigrate(&model.Transaction{}, &model.TransactionDetails{},&model.Customer{})	
+	
   }

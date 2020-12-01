@@ -2,13 +2,23 @@
 
 package model
 
+import (
+	"github.com/jinzhu/gorm"
+)
 type Customer struct {
-	ID        string  `json:"id"`
-	Firstname string  `json:"firstname"`
-	Lastname  string  `json:"lastname"`
-	Phone     string  `json:"phone"`
-	Email     *string `json:"email"`
-	Country   string  `json:"country"`
+	gorm.Model
+	Firstname   string         `json:"firstname"`
+	Lastname    string         `json:"lastname"`
+	Phone       string         `json:"phone"`
+	Email       *string        `json:"email"`
+	Country     string         `json:"country"`
+	Receptions  []*Transaction `json:"receptions"`
+	Expiditions []*Transaction `json:"expiditions"`
+}
+
+type CustomerChanges struct {
+	Firstname string `json:"firstname"`
+	Lastname  string `json:"lastname"`
 }
 
 type CustomerInput struct {
@@ -19,11 +29,19 @@ type CustomerInput struct {
 	Country   string  `json:"country"`
 }
 
+type ReceptionInput struct {
+	ReceiverAgentID *string `json:"receiverAgentID"`
+	Status          string  `json:"status"`
+}
+
 type Transaction struct {
-	ID                 string              `json:"id"`
+	gorm.Model
+	SenderID           uint               `json:"senderID"`
+	ReceiverID         uint               `json:"receiverID"`
 	Txcode             string              `json:"txcode"`
-	Sender             *Customer           `json:"sender"`
-	Receiver           *Customer           `json:"receiver"`
+	Sender             *Customer           `json:"sender" gorm:"foreignKey:SenderID"`
+	Receiver           *Customer           `json:"receiver" gorm:"foreignKey:ReceiverID"`
+	DetailsID          uint                `json:"detailsID"`
 	TransactionDetails *TransactionDetails `json:"transactionDetails"`
 	SenderAgentID      *string             `json:"senderAgentID"`
 	ReceiverAgentID    *string             `json:"receiverAgentID"`
@@ -31,7 +49,7 @@ type Transaction struct {
 }
 
 type TransactionDetails struct {
-	ID               string  `json:"id"`
+	gorm.Model
 	Txcode           string  `json:"txcode"`
 	SentAmount       float64 `json:"sentAmount"`
 	SentCurrency     string  `json:"sentCurrency"`

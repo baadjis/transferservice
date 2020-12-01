@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"fmt"
 	
 
   
@@ -26,7 +27,7 @@ func main(){
 	if port == "" {
 		port = defaultPort
 	}
-
+    fmt.Println(database.DB)
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
 		DB: database.DB,
 	}}))

@@ -44,31 +44,44 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Customer struct {
-		Country   func(childComplexity int) int
-		Email     func(childComplexity int) int
-		Firstname func(childComplexity int) int
-		ID        func(childComplexity int) int
-		Lastname  func(childComplexity int) int
-		Phone     func(childComplexity int) int
+		Country     func(childComplexity int) int
+		Email       func(childComplexity int) int
+		Expiditions func(childComplexity int) int
+		Firstname   func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Lastname    func(childComplexity int) int
+		Phone       func(childComplexity int) int
+		Receptions  func(childComplexity int) int
 	}
 
 	Mutation struct {
+		AddCustomer       func(childComplexity int, input model.CustomerInput) int
+		AddDetails        func(childComplexity int, input model.TransactionDetailsInput) int
+		ChangeReceiver    func(childComplexity int, txcode string, input model.CustomerChanges) int
+		ConfirmReception  func(childComplexity int, txcode string, input model.ReceptionInput) int
 		CreateTransaction func(childComplexity int, input model.TransactionInput) int
+		DeletCustomer     func(childComplexity int, id string) int
+		DeleteDetails     func(childComplexity int, txcode string) int
 		DeleteTransaction func(childComplexity int, txcode string) int
-		UpdateTransaction func(childComplexity int, txcode string, input *model.TransactionInput) int
+		UpdateTransaction func(childComplexity int, txcode string, input model.TransactionInput) int
 	}
 
 	Query struct {
-		Transactions func(childComplexity int) int
-		Transation   func(childComplexity int, txcode string) int
+		CustomerExpeditions func(childComplexity int, id string) int
+		CustomerReceptions  func(childComplexity int, id string) int
+		Transaction         func(childComplexity int, txcode string) int
+		Transactions        func(childComplexity int) int
 	}
 
 	Transaction struct {
+		DetailsID          func(childComplexity int) int
 		ID                 func(childComplexity int) int
 		Receiver           func(childComplexity int) int
 		ReceiverAgentID    func(childComplexity int) int
+		ReceiverID         func(childComplexity int) int
 		Sender             func(childComplexity int) int
 		SenderAgentID      func(childComplexity int) int
+		SenderID           func(childComplexity int) int
 		Status             func(childComplexity int) int
 		TransactionDetails func(childComplexity int) int
 		Txcode             func(childComplexity int) int
@@ -90,12 +103,20 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	CreateTransaction(ctx context.Context, input model.TransactionInput) (*model.Transaction, error)
-	UpdateTransaction(ctx context.Context, txcode string, input *model.TransactionInput) (*model.Transaction, error)
+	UpdateTransaction(ctx context.Context, txcode string, input model.TransactionInput) (*model.Transaction, error)
 	DeleteTransaction(ctx context.Context, txcode string) (bool, error)
+	ConfirmReception(ctx context.Context, txcode string, input model.ReceptionInput) (bool, error)
+	AddCustomer(ctx context.Context, input model.CustomerInput) (*model.Customer, error)
+	ChangeReceiver(ctx context.Context, txcode string, input model.CustomerChanges) (*model.Customer, error)
+	DeletCustomer(ctx context.Context, id string) (bool, error)
+	AddDetails(ctx context.Context, input model.TransactionDetailsInput) (*model.TransactionDetails, error)
+	DeleteDetails(ctx context.Context, txcode string) (bool, error)
 }
 type QueryResolver interface {
 	Transactions(ctx context.Context) ([]*model.Transaction, error)
-	Transation(ctx context.Context, txcode string) (*model.Transaction, error)
+	Transaction(ctx context.Context, txcode string) (*model.Transaction, error)
+	CustomerReceptions(ctx context.Context, id string) ([]*model.Transaction, error)
+	CustomerExpeditions(ctx context.Context, id string) ([]*model.Transaction, error)
 }
 
 type executableSchema struct {
@@ -127,6 +148,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Customer.Email(childComplexity), true
 
+	case "Customer.expiditions":
+		if e.complexity.Customer.Expiditions == nil {
+			break
+		}
+
+		return e.complexity.Customer.Expiditions(childComplexity), true
+
 	case "Customer.firstname":
 		if e.complexity.Customer.Firstname == nil {
 			break
@@ -155,6 +183,61 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Customer.Phone(childComplexity), true
 
+	case "Customer.receptions":
+		if e.complexity.Customer.Receptions == nil {
+			break
+		}
+
+		return e.complexity.Customer.Receptions(childComplexity), true
+
+	case "Mutation.addCustomer":
+		if e.complexity.Mutation.AddCustomer == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addCustomer_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddCustomer(childComplexity, args["input"].(model.CustomerInput)), true
+
+	case "Mutation.addDetails":
+		if e.complexity.Mutation.AddDetails == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addDetails_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddDetails(childComplexity, args["input"].(model.TransactionDetailsInput)), true
+
+	case "Mutation.ChangeReceiver":
+		if e.complexity.Mutation.ChangeReceiver == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_ChangeReceiver_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ChangeReceiver(childComplexity, args["txcode"].(string), args["input"].(model.CustomerChanges)), true
+
+	case "Mutation.confirmReception":
+		if e.complexity.Mutation.ConfirmReception == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_confirmReception_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ConfirmReception(childComplexity, args["txcode"].(string), args["input"].(model.ReceptionInput)), true
+
 	case "Mutation.createTransaction":
 		if e.complexity.Mutation.CreateTransaction == nil {
 			break
@@ -166,6 +249,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateTransaction(childComplexity, args["input"].(model.TransactionInput)), true
+
+	case "Mutation.deletCustomer":
+		if e.complexity.Mutation.DeletCustomer == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deletCustomer_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeletCustomer(childComplexity, args["id"].(string)), true
+
+	case "Mutation.deleteDetails":
+		if e.complexity.Mutation.DeleteDetails == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteDetails_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteDetails(childComplexity, args["txcode"].(string)), true
 
 	case "Mutation.deleteTransaction":
 		if e.complexity.Mutation.DeleteTransaction == nil {
@@ -189,7 +296,43 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateTransaction(childComplexity, args["txcode"].(string), args["input"].(*model.TransactionInput)), true
+		return e.complexity.Mutation.UpdateTransaction(childComplexity, args["txcode"].(string), args["input"].(model.TransactionInput)), true
+
+	case "Query.customerExpeditions":
+		if e.complexity.Query.CustomerExpeditions == nil {
+			break
+		}
+
+		args, err := ec.field_Query_customerExpeditions_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.CustomerExpeditions(childComplexity, args["id"].(string)), true
+
+	case "Query.customerReceptions":
+		if e.complexity.Query.CustomerReceptions == nil {
+			break
+		}
+
+		args, err := ec.field_Query_customerReceptions_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.CustomerReceptions(childComplexity, args["id"].(string)), true
+
+	case "Query.transaction":
+		if e.complexity.Query.Transaction == nil {
+			break
+		}
+
+		args, err := ec.field_Query_transaction_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Transaction(childComplexity, args["txcode"].(string)), true
 
 	case "Query.transactions":
 		if e.complexity.Query.Transactions == nil {
@@ -198,17 +341,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Transactions(childComplexity), true
 
-	case "Query.transation":
-		if e.complexity.Query.Transation == nil {
+	case "Transaction.detailsID":
+		if e.complexity.Transaction.DetailsID == nil {
 			break
 		}
 
-		args, err := ec.field_Query_transation_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Transation(childComplexity, args["txcode"].(string)), true
+		return e.complexity.Transaction.DetailsID(childComplexity), true
 
 	case "Transaction.id":
 		if e.complexity.Transaction.ID == nil {
@@ -231,6 +369,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Transaction.ReceiverAgentID(childComplexity), true
 
+	case "Transaction.receiverID":
+		if e.complexity.Transaction.ReceiverID == nil {
+			break
+		}
+
+		return e.complexity.Transaction.ReceiverID(childComplexity), true
+
 	case "Transaction.sender":
 		if e.complexity.Transaction.Sender == nil {
 			break
@@ -244,6 +389,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Transaction.SenderAgentID(childComplexity), true
+
+	case "Transaction.senderID":
+		if e.complexity.Transaction.SenderID == nil {
+			break
+		}
+
+		return e.complexity.Transaction.SenderID(childComplexity), true
 
 	case "Transaction.status":
 		if e.complexity.Transaction.Status == nil {
@@ -411,7 +563,11 @@ type Customer {
   phone: String!
   email: String
   country:String!
+  receptions:[Transaction]
+  expiditions:[Transaction]
+
 }
+
 
 type TransactionDetails{
   id: ID!
@@ -428,15 +584,23 @@ type TransactionDetails{
 
 type Transaction{
   id:ID!
+  senderID:ID!
+  receiverID:ID!
   txcode:String!
   sender:Customer!
-  receiver: Customer!
+  receiver:Customer!
+  detailsID: ID!
   transactionDetails:TransactionDetails!
   senderAgentID:String
   receiverAgentID:String
   status:String!
 }
 
+input CustomerChanges{
+  firstname: String!
+  lastname:String!
+  
+}
 
 input CustomerInput{
 
@@ -468,9 +632,16 @@ input TransactionInput {
   receiverAgentID:String
   status:String!
 }
+
+input ReceptionInput{
+  receiverAgentID:String
+  status:String!
+}
 type Query {
   transactions: [Transaction!]!
-  transation(txcode:String!):Transaction!
+  transaction(txcode:String!):Transaction!
+  customerReceptions(id:ID!):[Transaction!]!
+  customerExpeditions(id:ID!):[Transaction!]!
 }
 
 
@@ -478,9 +649,20 @@ type Query {
 type Mutation {
   createTransaction(input: TransactionInput!): Transaction!
 
-  updateTransaction(txcode:String!,input:TransactionInput):Transaction!
+  updateTransaction(txcode:String!,input:TransactionInput!):Transaction!
 
   deleteTransaction(txcode:String!):Boolean!
+
+  confirmReception(txcode:String!,input:ReceptionInput!):Boolean!
+
+  
+  addCustomer(input:CustomerInput!):Customer!
+  ChangeReceiver(txcode:String!,input:CustomerChanges!):Customer!
+  deletCustomer(id:ID!):Boolean!
+
+  addDetails(input:TransactionDetailsInput!):TransactionDetails!
+
+  deleteDetails(txcode:String!):Boolean!
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -488,6 +670,84 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_ChangeReceiver_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["txcode"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("txcode"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["txcode"] = arg0
+	var arg1 model.CustomerChanges
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg1, err = ec.unmarshalNCustomerChanges2githubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomerChanges(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_addCustomer_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.CustomerInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNCustomerInput2githubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomerInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_addDetails_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.TransactionDetailsInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNTransactionDetailsInput2githubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionDetailsInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_confirmReception_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["txcode"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("txcode"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["txcode"] = arg0
+	var arg1 model.ReceptionInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg1, err = ec.unmarshalNReceptionInput2githubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐReceptionInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg1
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_createTransaction_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -501,6 +761,36 @@ func (ec *executionContext) field_Mutation_createTransaction_args(ctx context.Co
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deletCustomer_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteDetails_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["txcode"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("txcode"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["txcode"] = arg0
 	return args, nil
 }
 
@@ -531,10 +821,10 @@ func (ec *executionContext) field_Mutation_updateTransaction_args(ctx context.Co
 		}
 	}
 	args["txcode"] = arg0
-	var arg1 *model.TransactionInput
+	var arg1 model.TransactionInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg1, err = ec.unmarshalOTransactionInput2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionInput(ctx, tmp)
+		arg1, err = ec.unmarshalNTransactionInput2githubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -558,7 +848,37 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_transation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_customerExpeditions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_customerReceptions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_transaction_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -818,6 +1138,70 @@ func (ec *executionContext) _Customer_country(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Customer_receptions(ctx context.Context, field graphql.CollectedField, obj *model.Customer) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Customer",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Receptions, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Transaction)
+	fc.Result = res
+	return ec.marshalOTransaction2ᚕᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransaction(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Customer_expiditions(ctx context.Context, field graphql.CollectedField, obj *model.Customer) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Customer",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Expiditions, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Transaction)
+	fc.Result = res
+	return ec.marshalOTransaction2ᚕᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransaction(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_createTransaction(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -885,7 +1269,7 @@ func (ec *executionContext) _Mutation_updateTransaction(ctx context.Context, fie
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateTransaction(rctx, args["txcode"].(string), args["input"].(*model.TransactionInput))
+		return ec.resolvers.Mutation().UpdateTransaction(rctx, args["txcode"].(string), args["input"].(model.TransactionInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -944,6 +1328,258 @@ func (ec *executionContext) _Mutation_deleteTransaction(ctx context.Context, fie
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_confirmReception(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_confirmReception_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ConfirmReception(rctx, args["txcode"].(string), args["input"].(model.ReceptionInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_addCustomer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_addCustomer_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AddCustomer(rctx, args["input"].(model.CustomerInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Customer)
+	fc.Result = res
+	return ec.marshalNCustomer2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_ChangeReceiver(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_ChangeReceiver_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ChangeReceiver(rctx, args["txcode"].(string), args["input"].(model.CustomerChanges))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Customer)
+	fc.Result = res
+	return ec.marshalNCustomer2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deletCustomer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deletCustomer_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeletCustomer(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_addDetails(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_addDetails_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AddDetails(rctx, args["input"].(model.TransactionDetailsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TransactionDetails)
+	fc.Result = res
+	return ec.marshalNTransactionDetails2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionDetails(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteDetails(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteDetails_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteDetails(rctx, args["txcode"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_transactions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -979,7 +1615,7 @@ func (ec *executionContext) _Query_transactions(ctx context.Context, field graph
 	return ec.marshalNTransaction2ᚕᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_transation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_transaction(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -996,7 +1632,7 @@ func (ec *executionContext) _Query_transation(ctx context.Context, field graphql
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_transation_args(ctx, rawArgs)
+	args, err := ec.field_Query_transaction_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -1004,7 +1640,7 @@ func (ec *executionContext) _Query_transation(ctx context.Context, field graphql
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Transation(rctx, args["txcode"].(string))
+		return ec.resolvers.Query().Transaction(rctx, args["txcode"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1019,6 +1655,90 @@ func (ec *executionContext) _Query_transation(ctx context.Context, field graphql
 	res := resTmp.(*model.Transaction)
 	fc.Result = res
 	return ec.marshalNTransaction2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransaction(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_customerReceptions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_customerReceptions_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().CustomerReceptions(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Transaction)
+	fc.Result = res
+	return ec.marshalNTransaction2ᚕᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_customerExpeditions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_customerExpeditions_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().CustomerExpeditions(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Transaction)
+	fc.Result = res
+	return ec.marshalNTransaction2ᚕᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1111,6 +1831,76 @@ func (ec *executionContext) _Transaction_id(ctx context.Context, field graphql.C
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Transaction_senderID(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Transaction",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SenderID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Transaction_receiverID(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Transaction",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ReceiverID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1230,6 +2020,41 @@ func (ec *executionContext) _Transaction_receiver(ctx context.Context, field gra
 	res := resTmp.(*model.Customer)
 	fc.Result = res
 	return ec.marshalNCustomer2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Transaction_detailsID(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Transaction",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DetailsID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Transaction_transactionDetails(ctx context.Context, field graphql.CollectedField, obj *model.Transaction) (ret graphql.Marshaler) {
@@ -2803,6 +3628,34 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputCustomerChanges(ctx context.Context, obj interface{}) (model.CustomerChanges, error) {
+	var it model.CustomerChanges
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "firstname":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("firstname"))
+			it.Firstname, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "lastname":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastname"))
+			it.Lastname, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCustomerInput(ctx context.Context, obj interface{}) (model.CustomerInput, error) {
 	var it model.CustomerInput
 	var asMap = obj.(map[string]interface{})
@@ -2846,6 +3699,34 @@ func (ec *executionContext) unmarshalInputCustomerInput(ctx context.Context, obj
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("country"))
 			it.Country, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputReceptionInput(ctx context.Context, obj interface{}) (model.ReceptionInput, error) {
+	var it model.ReceptionInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "receiverAgentID":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("receiverAgentID"))
+			it.ReceiverAgentID, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "status":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			it.Status, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3053,6 +3934,10 @@ func (ec *executionContext) _Customer(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "receptions":
+			out.Values[i] = ec._Customer_receptions(ctx, field, obj)
+		case "expiditions":
+			out.Values[i] = ec._Customer_expiditions(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3091,6 +3976,36 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "deleteTransaction":
 			out.Values[i] = ec._Mutation_deleteTransaction(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "confirmReception":
+			out.Values[i] = ec._Mutation_confirmReception(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "addCustomer":
+			out.Values[i] = ec._Mutation_addCustomer(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "ChangeReceiver":
+			out.Values[i] = ec._Mutation_ChangeReceiver(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deletCustomer":
+			out.Values[i] = ec._Mutation_deletCustomer(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "addDetails":
+			out.Values[i] = ec._Mutation_addDetails(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteDetails":
+			out.Values[i] = ec._Mutation_deleteDetails(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -3134,7 +4049,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
-		case "transation":
+		case "transaction":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -3142,7 +4057,35 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_transation(ctx, field)
+				res = ec._Query_transaction(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "customerReceptions":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_customerReceptions(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "customerExpeditions":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_customerExpeditions(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -3179,6 +4122,16 @@ func (ec *executionContext) _Transaction(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "senderID":
+			out.Values[i] = ec._Transaction_senderID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "receiverID":
+			out.Values[i] = ec._Transaction_receiverID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "txcode":
 			out.Values[i] = ec._Transaction_txcode(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3191,6 +4144,11 @@ func (ec *executionContext) _Transaction(ctx context.Context, sel ast.SelectionS
 			}
 		case "receiver":
 			out.Values[i] = ec._Transaction_receiver(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "detailsID":
+			out.Values[i] = ec._Transaction_detailsID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -3551,6 +4509,10 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCustomer2githubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomer(ctx context.Context, sel ast.SelectionSet, v model.Customer) graphql.Marshaler {
+	return ec._Customer(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNCustomer2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomer(ctx context.Context, sel ast.SelectionSet, v *model.Customer) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -3559,6 +4521,16 @@ func (ec *executionContext) marshalNCustomer2ᚖgithubᚗcomᚋbaadjisᚋtransfe
 		return graphql.Null
 	}
 	return ec._Customer(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCustomerChanges2githubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomerChanges(ctx context.Context, v interface{}) (model.CustomerChanges, error) {
+	res, err := ec.unmarshalInputCustomerChanges(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNCustomerInput2githubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomerInput(ctx context.Context, v interface{}) (model.CustomerInput, error) {
+	res, err := ec.unmarshalInputCustomerInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNCustomerInput2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐCustomerInput(ctx context.Context, v interface{}) (*model.CustomerInput, error) {
@@ -3594,6 +4566,11 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNReceptionInput2githubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐReceptionInput(ctx context.Context, v interface{}) (model.ReceptionInput, error) {
+	res, err := ec.unmarshalInputReceptionInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -3662,6 +4639,10 @@ func (ec *executionContext) marshalNTransaction2ᚖgithubᚗcomᚋbaadjisᚋtran
 	return ec._Transaction(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNTransactionDetails2githubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionDetails(ctx context.Context, sel ast.SelectionSet, v model.TransactionDetails) graphql.Marshaler {
+	return ec._TransactionDetails(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNTransactionDetails2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionDetails(ctx context.Context, sel ast.SelectionSet, v *model.TransactionDetails) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -3670,6 +4651,11 @@ func (ec *executionContext) marshalNTransactionDetails2ᚖgithubᚗcomᚋbaadjis
 		return graphql.Null
 	}
 	return ec._TransactionDetails(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTransactionDetailsInput2githubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionDetailsInput(ctx context.Context, v interface{}) (model.TransactionDetailsInput, error) {
+	res, err := ec.unmarshalInputTransactionDetailsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNTransactionDetailsInput2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionDetailsInput(ctx context.Context, v interface{}) (*model.TransactionDetailsInput, error) {
@@ -3959,12 +4945,51 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	return graphql.MarshalString(*v)
 }
 
-func (ec *executionContext) unmarshalOTransactionInput2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransactionInput(ctx context.Context, v interface{}) (*model.TransactionInput, error) {
+func (ec *executionContext) marshalOTransaction2ᚕᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransaction(ctx context.Context, sel ast.SelectionSet, v []*model.Transaction) graphql.Marshaler {
 	if v == nil {
-		return nil, nil
+		return graphql.Null
 	}
-	res, err := ec.unmarshalInputTransactionInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOTransaction2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransaction(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalOTransaction2ᚖgithubᚗcomᚋbaadjisᚋtransferserviceᚋgraphᚋmodelᚐTransaction(ctx context.Context, sel ast.SelectionSet, v *model.Transaction) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Transaction(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

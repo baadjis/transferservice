@@ -12,30 +12,22 @@ import (
 )
 
 func (r *mutationResolver) CreateTransaction(ctx context.Context, input model.TransactionInput) (*model.Transaction, error) {
-	
 	sender,_:=r.AddCustomer(ctx,*input.Sender)
-
 	receiver,_:=r.AddCustomer(ctx,*input.Receiver)
-
 	details,_:=r.AddDetails(ctx,*input.TransactionDetails)
-
     transaction:= model.Transaction{
 	   Txcode :input.Txcode,
 	   SenderAgentID:input.SenderAgentID,
 	   ReceiverAgentID:input.ReceiverAgentID,
-	   SenderID:sender.ID,
-	   ReceiverID:receiver.ID,
-	   Sender:sender,
-	   Receiver:receiver,
-	   TransactionDetails:details,
-	   DetailsID:details.ID,
+	   Sender:sender.ID,
+	   Receiver:receiver.ID,
+	   TransactionDetails:details.ID,
 	   Status:input.Status}
-   
+   fmt.Println(r.DB)
    err := r.DB.Create(&transaction).Error
    if err != nil {
 	   return nil, err
    }
-   fmt.Println(transaction.ID)
    return &transaction,nil
 }
 
@@ -44,11 +36,8 @@ func (r *mutationResolver) UpdateTransaction(ctx context.Context, txcode string,
 }
 
 func (r *mutationResolver) DeleteTransaction(ctx context.Context, txcode string) (bool, error) {
-	
 	r.DB.Where("Txcode = ?", txcode).Delete(&model.TransactionDetails{})
-
-	r.DB.Where("Txcode= ?", txcode).Delete(&model.Transaction{})
-	
+    r.DB.Where("Txcode= ?", txcode).Delete(&model.Transaction{})
 	return true, nil
 }
 
@@ -59,7 +48,6 @@ func (r *mutationResolver) ConfirmReception(ctx context.Context, txcode string, 
 }
 
 func (r *mutationResolver) AddCustomer(ctx context.Context, input model.CustomerInput) (*model.Customer, error) {
-	
 	customer:=model.Customer{
 		Firstname :input.Firstname,
 		Lastname  :input.Lastname,
@@ -73,17 +61,11 @@ func (r *mutationResolver) AddCustomer(ctx context.Context, input model.Customer
 }
 
 func (r *mutationResolver) ChangeReceiver(ctx context.Context, txcode string, input model.CustomerChanges) (*model.Customer, error) {
-	
 	var transaction model.Transaction
-
 	r.DB.Where("Txcode= ?", txcode).First(&transaction)
-
-	customer_id:=transaction.Receiver
-
+	customerid:=transaction.Receiver
 	var customer model.Customer
-
-	r.DB.First(&customer,customer_id)
-	
+    r.DB.First(&customer,customerid)
 	return &customer,nil
 }
 
@@ -93,10 +75,9 @@ func (r *mutationResolver) DeletCustomer(ctx context.Context, id string) (bool, 
 }
 
 func (r *mutationResolver) AddDetails(ctx context.Context, input model.TransactionDetailsInput) (*model.TransactionDetails, error) {
-	
 	dt:= model.TransactionDetails{
-		Txcode           :input.Txcode,
-		SentAmount       :input.SentAmount,
+		Txcode         :input.Txcode,
+		SentAmount      :input.SentAmount,
 		SentCurrency     :input.SentCurrency,
 		ReceivedAmount   :input.ReceivedAmount,
 		ReceivedCurrency :input.ReceivedCurrency,
@@ -112,41 +93,25 @@ func (r *mutationResolver) AddDetails(ctx context.Context, input model.Transacti
 }
 
 func (r *mutationResolver) DeleteDetails(ctx context.Context, txcode string) (bool, error) {
-	
 	r.DB.Where("Txcode = ?", txcode).Delete(&model.TransactionDetails{})
-
-	r.DB.Where("Txcode= ?", txcode).Delete(&model.Transaction{})
-	
+    r.DB.Where("Txcode= ?", txcode).Delete(&model.Transaction{})
 	return true, nil
 }
 
 func (r *queryResolver) Transactions(ctx context.Context) ([]*model.Transaction, error) {
-	
 	var transactions []*model.Transaction
-
 	r.DB.Find(&transactions)
-	
     return transactions,nil
 }
 
 func (r *queryResolver) Transaction(ctx context.Context, txcode string) (*model.Transaction, error) {
 	var transaction model.Transaction
-	var sender  model.Customer
-	var receiver model.Customer
-	var details model.TransactionDetails
-	r.DB.Where("txcode = ?" ,txcode).First(&transaction)
-	r.DB.Where("id = ?" ,transaction.SenderID).First(&sender)
-	r.DB.Where("id = ?" ,transaction.ReceiverID).First(&receiver)
-	r.DB.Where("id = ?" ,transaction.DetailsID).First(&details)
-	transaction.Sender = &sender
-	transaction.Receiver = &receiver
-    transaction.TransactionDetails =&details
-	
-	//Joins(" JOIN transaction_details ON transaction_details.txcode = transactions.txcode").
-	//Joins(" JOIN customers ON customers.id = transactions.sender_id").
+	r.DB.Joins(" JOIN transaction_details ON transaction_details.txcode = transactions.txcode").
+	Joins(" JOIN customers ON customers.id = transactions.sender").
+	Where("transactions.txcode = ?" ,txcode).
+	First(&transaction)
 
-    fmt.Println(transaction.ID)
-    return &transaction , nil
+    return &transaction,nil
 }
 
 func (r *queryResolver) CustomerReceptions(ctx context.Context, id string) ([]*model.Transaction, error) {
